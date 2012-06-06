@@ -250,8 +250,15 @@ func TestReadTwoValues(t *testing.T) {
 	</div>`
 
 	item := ReadOneItem(html, t)
-
-	if item.properties["birthday"][0].(string) != "2009-05-10" {
-		t.Errorf("Property value not found")
+	if len(item.properties["flavor"]) != 2 {
+		t.Errorf("Expecting 2 items but got %d",len(item.properties["flavor"]) )
 	}
+	if item.properties["flavor"][0].(string) != "Lemon sorbet" {
+		t.Errorf("Property value 'Lemon sorbet' not found")
+	}
+	if item.properties["flavor"][1].(string) != "Apricot sorbet" {
+		t.Errorf("Property value 'Apricot sorbet' not found")
+	}
+
+
 }
