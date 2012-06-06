@@ -5,7 +5,8 @@ import (
 	"testing"
 )
 
-func ReadOneItem(html string, t *testing.T) *Item {
+
+func ReadData(html string, t *testing.T) *Microdata {
 	p := NewParser(strings.NewReader(html))
 
 	data, err := p.Parse()
@@ -17,9 +18,13 @@ func ReadOneItem(html string, t *testing.T) *Item {
 		t.Errorf("Expected non-nil data")
 	}
 
-	return data.items[0]
+	return data
 }
 
+func ReadOneItem(html string, t *testing.T) *Item {
+	data := ReadData(html, t)
+	return data.items[0]
+}
 
 func TestRead(t *testing.T) {
 	html := `
@@ -234,3 +239,19 @@ func TestReadTimeDatetime(t *testing.T) {
 
 
 
+func TestReadTwoValues(t *testing.T) {
+	html := `
+	<div itemscope>
+	 <p>Flavors in my favorite ice cream:</p>
+	 <ul>
+	  <li itemprop="flavor">Lemon sorbet</li>
+	  <li itemprop="flavor">Apricot sorbet</li>
+	 </ul>
+	</div>`
+
+	item := ReadOneItem(html, t)
+
+	if item.properties["birthday"][0].(string) != "2009-05-10" {
+		t.Errorf("Property value not found")
+	}
+}
