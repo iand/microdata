@@ -6,7 +6,7 @@ import (
 )
 
 
-func ReadData(html string, t *testing.T) *Microdata {
+func ParseData(html string, t *testing.T) *Microdata {
 	p := NewParser(strings.NewReader(html))
 
 	data, err := p.Parse()
@@ -21,18 +21,18 @@ func ReadData(html string, t *testing.T) *Microdata {
 	return data
 }
 
-func ReadOneItem(html string, t *testing.T) *Item {
-	data := ReadData(html, t)
+func ParseOneItem(html string, t *testing.T) *Item {
+	data := ParseData(html, t)
 	return data.items[0]
 }
 
-func TestRead(t *testing.T) {
+func TestParse(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <p>My name is <span itemprop="name">Elizabeth</span>.</p>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["name"][0].(string) != "Elizabeth" {
 		t.Errorf("Property value not found")
@@ -41,12 +41,12 @@ func TestRead(t *testing.T) {
 }
 
 
-func TestReadActuallyParses(t *testing.T) {
+func TestParseActuallyParses(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <p>My name is <span itemprop="name">Daniel</span>.</p>
 	</div>`
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["name"][0].(string) != "Daniel" {
 		t.Errorf("Property value not found")
@@ -55,7 +55,7 @@ func TestReadActuallyParses(t *testing.T) {
 }
 
 
-func TestReadThreeProps(t *testing.T) {
+func TestParseThreeProps(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <p>My name is <span itemprop="name">Neil</span>.</p>
@@ -63,7 +63,7 @@ func TestReadThreeProps(t *testing.T) {
 	 <p>I am <span itemprop="nationality">British</span>.</p>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["name"][0].(string) != "Neil" {
 		t.Errorf("Property value not found")
@@ -79,79 +79,79 @@ func TestReadThreeProps(t *testing.T) {
 }
 
 
-func TestReadImgSrc(t *testing.T) {
+func TestParseImgSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <img itemprop="image" src="google-logo.png" alt="Google">
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["image"][0].(string) != "google-logo.png" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadAHref(t *testing.T) {
+func TestParseAHref(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <a itemprop="image" href="google-logo.png">foo</a>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["image"][0].(string) != "google-logo.png" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadAreaHref(t *testing.T) {
+func TestParseAreaHref(t *testing.T) {
 	html := `
 	<div itemscope><map name="shapes">
 	 <area itemprop="foo" href="target.html" shape=rect coords="50,50,100,100">
 	
 	</map></div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target.html" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadLinkHref(t *testing.T) {
+func TestParseLinkHref(t *testing.T) {
 	html := `
 	<div itemscope>
 		<link itemprop="foo" rel="author" href="target.html">
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target.html" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadAudioSrc(t *testing.T) {
+func TestParseAudioSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <audio itemprop="foo" src="target"></audio>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadSourceSrc(t *testing.T) {
+func TestParseSourceSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <source itemprop="foo" src="target"></source>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
@@ -159,78 +159,78 @@ func TestReadSourceSrc(t *testing.T) {
 }
 
 
-func TestReadVideoSrc(t *testing.T) {
+func TestParseVideoSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <video itemprop="foo" src="target"></video>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadEmbedSrc(t *testing.T) {
+func TestParseEmbedSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <embed itemprop="foo" src="target"></embed>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadTrackSrc(t *testing.T) {
+func TestParseTrackSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <track itemprop="foo" src="target"></track>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadIFrameSrc(t *testing.T) {
+func TestParseIFrameSrc(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <iframe itemprop="foo" src="target"></iframe>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["foo"][0].(string) != "target" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadDataValue(t *testing.T) {
+func TestParseDataValue(t *testing.T) {
 	html := `
 	<h1 itemscope>
  		<data itemprop="product-id" value="9678AOU879">The Instigator 2000</data>
 	</h1>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["product-id"][0].(string) != "9678AOU879" {
 		t.Errorf("Property value not found")
 	}
 }
 
-func TestReadTimeDatetime(t *testing.T) {
+func TestParseTimeDatetime(t *testing.T) {
 	html := `
 	<h1 itemscope>
  		I was born on <time itemprop="birthday" datetime="2009-05-10">May 10th 2009</time>.
 	</h1>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 
 	if item.properties["birthday"][0].(string) != "2009-05-10" {
 		t.Errorf("Property value not found")
@@ -239,7 +239,7 @@ func TestReadTimeDatetime(t *testing.T) {
 
 
 
-func TestReadTwoValues(t *testing.T) {
+func TestParseTwoValues(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <p>Flavors in my favorite ice cream:</p>
@@ -249,7 +249,7 @@ func TestReadTwoValues(t *testing.T) {
 	 </ul>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 	if len(item.properties["flavor"]) != 2 {
 		t.Errorf("Expecting 2 values but got %d",len(item.properties["flavor"]) )
 	}
@@ -263,13 +263,13 @@ func TestReadTwoValues(t *testing.T) {
 
 }
 
-func TestReadTwoPropertiesOneValue(t *testing.T) {
+func TestParseTwoPropertiesOneValue(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <span itemprop="favorite-color favorite-fruit">orange</span>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 	if len(item.properties) != 2 {
 		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
 	}
@@ -287,13 +287,13 @@ func TestReadTwoPropertiesOneValue(t *testing.T) {
 	}
 }
 
-func TestReadTwoPropertiesOneValueMultispaced(t *testing.T) {
+func TestParseTwoPropertiesOneValueMultispaced(t *testing.T) {
 	html := `
 	<div itemscope>
 	 <span itemprop="   favorite-color    favorite-fruit   ">orange</span>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 	if len(item.properties) != 2 {
 		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
 	}
@@ -312,13 +312,13 @@ func TestReadTwoPropertiesOneValueMultispaced(t *testing.T) {
 	}
 }
 
-func TestReadItemType(t *testing.T) {
+func TestParseItemType(t *testing.T) {
 	html := `
 	<div itemscope itemtype="http://example.org/animals#cat">
  		<h1 itemprop="name">Hedral</h1>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 	if len(item.types) != 1 {
 		t.Errorf("Expecting 1 type but got %d",len(item.types) )	
 	}
@@ -328,13 +328,13 @@ func TestReadItemType(t *testing.T) {
 	}
 }
 
-func TestReadMultiplrItemTypes(t *testing.T) {
+func TestParseMultipleItemTypes(t *testing.T) {
 	html := `
 	<div itemscope itemtype=" http://example.org/animals#mammal  http://example.org/animals#cat  ">
  		<h1 itemprop="name">Hedral</h1>
 	</div>`
 
-	item := ReadOneItem(html, t)
+	item := ParseOneItem(html, t)
 	if len(item.types) != 2 {
 		t.Errorf("Expecting 2 types but got %d",len(item.types) )	
 	}
@@ -346,3 +346,23 @@ func TestReadMultiplrItemTypes(t *testing.T) {
 		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d",item.types[1]) 
 	}
 }
+
+func TestParseItemId(t *testing.T) {
+	html := `<dl itemscope
+	    itemtype="http://vocab.example.net/book"
+	    itemid="urn:isbn:0-330-34032-8">
+	 <dt>Title
+	 <dd itemprop="title">The Reality Dysfunction
+	 <dt>Author
+	 <dd itemprop="author">Peter F. Hamilton
+	 <dt>Publication date
+	 <dd><time itemprop="pubdate" datetime="1996-01-26">26 January 1996</time>
+	</dl>`
+
+	item := ParseOneItem(html, t)
+
+	if item.id != "urn:isbn:0-330-34032-8" {
+		t.Errorf("Expecting id of 'urn:isbn:0-330-34032-8' but got %d",item.id) 
+	}
+}
+
