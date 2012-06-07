@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
 	"io"
+	"strings"
 )
 
 
@@ -13,11 +14,13 @@ type PropertyMap map[string]ValueList
 
 type Item struct {
 	properties PropertyMap
+	types []string
 }
 
 func NewItem() *Item {
 	return &Item{
-		properties: make(PropertyMap, 10),
+		properties: make(PropertyMap, 0),
+		types: make([]string, 0),
 	}
 }
 
@@ -64,17 +67,19 @@ func (self *Parser) scanForItem(node *h5.Node) {
 		return
 	}
 
-	hasItemscope := false
-
-	for _, a := range node.Attr {
-		if a.Name == "itemscope" {
-			hasItemscope = true
-			break
-		}
-	}
-	if hasItemscope {
+	if _, exists := getAttr("itemscope", node); exists {
 		item := NewItem()
 		self.data.items = append(self.data.items, item)
+		if itemtypes, exists := getAttr("itemtype", node); exists {
+			for _, itemtype := range strings.Split(strings.TrimSpace(itemtypes), " ") {
+				itemtype = strings.TrimSpace(itemtype)
+				if itemtype != "" {
+					item.types = append(item.types, itemtype)
+				}
+			}
+
+			
+		} 
 
 
 		if len(node.Children) > 0 {
@@ -94,7 +99,7 @@ func (self *Parser) scanForItem(node *h5.Node) {
 }
 
 func (self *Parser) readItem(item *Item, node *h5.Node) {
-	if propertyName, exists := getAttr("itemprop", node); exists {
+	if itemprop, exists := getAttr("itemprop", node); exists {
 		var propertyValue string
 		
 		switch node.Data() {
@@ -127,7 +132,12 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 			propertyValue = text.String()
 		}
 
-		item.SetString(propertyName, propertyValue)
+		for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+			propertyName = strings.TrimSpace(propertyName)
+			if propertyName != "" {
+				item.SetString(propertyName, propertyValue)
+			}
+		}
 	}
 
 	if len(node.Children) > 0 {

@@ -270,10 +270,13 @@ func TestReadTwoPropertiesOneValue(t *testing.T) {
 	</div>`
 
 	item := ReadOneItem(html, t)
-	if len(item.properties["favorite-color"]) != 2 {
+	if len(item.properties) != 2 {
+		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
+	}
+	if len(item.properties["favorite-color"]) != 1 {
 		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-color"]) )
 	}
-	if len(item.properties["favorite-fruit"]) != 2 {
+	if len(item.properties["favorite-fruit"]) != 1 {
 		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-fruit"]) )
 	}
 	if item.properties["favorite-color"][0].(string) != "orange" {
@@ -282,6 +285,64 @@ func TestReadTwoPropertiesOneValue(t *testing.T) {
 	if item.properties["favorite-fruit"][0].(string) != "orange" {
 		t.Errorf("Property value 'orange' not found for 'favorite-fruit'")
 	}
+}
 
+func TestReadTwoPropertiesOneValueMultispaced(t *testing.T) {
+	html := `
+	<div itemscope>
+	 <span itemprop="   favorite-color    favorite-fruit   ">orange</span>
+	</div>`
 
+	item := ReadOneItem(html, t)
+	if len(item.properties) != 2 {
+		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
+	}
+
+	if len(item.properties["favorite-color"]) != 1 {
+		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-color"]) )
+	}
+	if len(item.properties["favorite-fruit"]) != 1 {
+		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-fruit"]) )
+	}
+	if item.properties["favorite-color"][0].(string) != "orange" {
+		t.Errorf("Property value 'orange' not found for 'favorite-color'")
+	}
+	if item.properties["favorite-fruit"][0].(string) != "orange" {
+		t.Errorf("Property value 'orange' not found for 'favorite-fruit'")
+	}
+}
+
+func TestReadItemType(t *testing.T) {
+	html := `
+	<div itemscope itemtype="http://example.org/animals#cat">
+ 		<h1 itemprop="name">Hedral</h1>
+	</div>`
+
+	item := ReadOneItem(html, t)
+	if len(item.types) != 1 {
+		t.Errorf("Expecting 1 type but got %d",len(item.types) )	
+	}
+
+	if item.types[0] != "http://example.org/animals#cat" {
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d",item.types[0]) 
+	}
+}
+
+func TestReadMultiplrItemTypes(t *testing.T) {
+	html := `
+	<div itemscope itemtype=" http://example.org/animals#mammal  http://example.org/animals#cat  ">
+ 		<h1 itemprop="name">Hedral</h1>
+	</div>`
+
+	item := ReadOneItem(html, t)
+	if len(item.types) != 2 {
+		t.Errorf("Expecting 2 types but got %d",len(item.types) )	
+	}
+
+	if item.types[0] != "http://example.org/animals#mammal" {
+		t.Errorf("Expecting type of 'http://example.org/animals#mammal' but got %d",item.types[0]) 
+	}
+	if item.types[1] != "http://example.org/animals#cat" {
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d",item.types[1]) 
+	}
 }
