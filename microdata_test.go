@@ -251,13 +251,36 @@ func TestReadTwoValues(t *testing.T) {
 
 	item := ReadOneItem(html, t)
 	if len(item.properties["flavor"]) != 2 {
-		t.Errorf("Expecting 2 items but got %d",len(item.properties["flavor"]) )
+		t.Errorf("Expecting 2 values but got %d",len(item.properties["flavor"]) )
 	}
 	if item.properties["flavor"][0].(string) != "Lemon sorbet" {
 		t.Errorf("Property value 'Lemon sorbet' not found")
 	}
 	if item.properties["flavor"][1].(string) != "Apricot sorbet" {
 		t.Errorf("Property value 'Apricot sorbet' not found")
+	}
+
+
+}
+
+func TestReadTwoPropertiesOneValue(t *testing.T) {
+	html := `
+	<div itemscope>
+	 <span itemprop="favorite-color favorite-fruit">orange</span>
+	</div>`
+
+	item := ReadOneItem(html, t)
+	if len(item.properties["favorite-color"]) != 2 {
+		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-color"]) )
+	}
+	if len(item.properties["favorite-fruit"]) != 2 {
+		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-fruit"]) )
+	}
+	if item.properties["favorite-color"][0].(string) != "orange" {
+		t.Errorf("Property value 'orange' not found for 'favorite-color'")
+	}
+	if item.properties["favorite-fruit"][0].(string) != "orange" {
+		t.Errorf("Property value 'orange' not found for 'favorite-fruit'")
 	}
 
 
