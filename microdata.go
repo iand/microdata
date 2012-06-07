@@ -15,6 +15,7 @@ type PropertyMap map[string]ValueList
 type Item struct {
 	properties PropertyMap
 	types []string
+	id string
 }
 
 func NewItem() *Item {
@@ -77,7 +78,10 @@ func (self *Parser) scanForItem(node *h5.Node) {
 					item.types = append(item.types, itemtype)
 				}
 			}
-
+			// itemid only valid when itemscope and itemtype are both present
+			if itemid, exists := getAttr("itemid", node); exists {
+				item.id = strings.TrimSpace(itemid)
+			}
 			
 		} 
 
