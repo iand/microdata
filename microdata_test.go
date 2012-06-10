@@ -534,7 +534,7 @@ func TestParseItemRelativeId(t *testing.T) {
 
 func TestJson(t *testing.T) {
 	item := NewItem()
-	item.SetString("name", "Elizabeth")
+	item.AddString("name", "Elizabeth")
 
 	data := NewMicrodata()
 	data.AddItem(item)
@@ -551,7 +551,7 @@ func TestJson(t *testing.T) {
 func TestJsonWithType(t *testing.T) {
 	item := NewItem()
 	item.AddType("http://example.org/animals#cat")
-	item.SetString("name", "Elizabeth")
+	item.AddString("name", "Elizabeth")
 
 	data := NewMicrodata()
 	data.AddItem(item)

@@ -1,3 +1,10 @@
+/*
+  To the extent possible under law, Ian Davis has waived all copyright
+  and related or neighboring rights to this Source Code file.
+  This work is published from the United Kingdom. 
+*/
+
+// A package for parsing microdata
 package microdata
 
 import (
@@ -12,12 +19,14 @@ import (
 type ValueList []interface{}
 type PropertyMap map[string]ValueList
 
+// Represents a microdata item
 type Item struct {
 	Properties PropertyMap `json:"properties"`
 	Types      []string    `json:"type,omitempty"`
 	ID         string      `json:"id,omitempty"`
 }
 
+// Create a new microdata item
 func NewItem() *Item {
 	return &Item{
 		Properties: make(PropertyMap, 0),
@@ -25,32 +34,39 @@ func NewItem() *Item {
 	}
 }
 
-func (self *Item) SetString(property string, value string) {
+// Add a string type item property value
+func (self *Item) AddString(property string, value string) {
 	self.Properties[property] = append(self.Properties[property], value)
 }
 
-func (self *Item) SetItem(property string, value *Item) {
+// Add an Item type item property value
+func (self *Item) AddItem(property string, value *Item) {
 	self.Properties[property] = append(self.Properties[property], value)
 }
 
+// Add a type to the item
 func (self *Item) AddType(value string) {
 	self.Types = append(self.Types, value)
 }
 
+// Represents a set of microdata items
 type Microdata struct {
 	Items []*Item `json:"items"`
 }
 
+// Create a new microdata set
 func NewMicrodata() *Microdata {
 	return &Microdata{
 		Items: make([]*Item, 0),
 	}
 }
 
+// Add an item to the microdata set
 func (self *Microdata) AddItem(value *Item) {
 	self.Items = append(self.Items, value)
 }
 
+// Convert the microdata set to JSON
 func (self *Microdata) Json() ([]byte, error) {
 	b, err := json.Marshal(self)
 	if err != nil {
@@ -59,6 +75,7 @@ func (self *Microdata) Json() ([]byte, error) {
 	return b, nil
 }
 
+// An HTML parser that extracts microdata
 type Parser struct {
 	p               *h5.Parser
 	data            *Microdata
@@ -66,6 +83,9 @@ type Parser struct {
 	identifiedNodes map[string]*h5.Node
 }
 
+// Create a new parser for extracting microdata
+// r is a reader over an HTML document
+// base is the base URL for resolving relative URLs
 func NewParser(r io.Reader, base *url.URL) *Parser {
 	return &Parser{
 		p:    h5.NewParser(r),
@@ -74,6 +94,7 @@ func NewParser(r io.Reader, base *url.URL) *Parser {
 	}
 }
 
+// Parse the document and return a Microdata set
 func (self *Parser) Parse() (*Microdata, error) {
 	err := self.p.Parse()
 	if err != nil {
@@ -159,7 +180,7 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
 				propertyName = strings.TrimSpace(propertyName)
 				if propertyName != "" {
-					item.SetItem(propertyName, subitem)
+					item.AddItem(propertyName, subitem)
 				}
 			}
 
@@ -207,7 +228,7 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 				for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
 					propertyName = strings.TrimSpace(propertyName)
 					if propertyName != "" {
-						item.SetString(propertyName, propertyValue)
+						item.AddString(propertyName, propertyValue)
 					}
 				}
 			}
