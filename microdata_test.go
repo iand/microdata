@@ -446,3 +446,29 @@ func TestParseMultiValuedItemRef(t *testing.T) {
 		t.Errorf("Property value '26' not found for 'age'")
 	}
 }
+
+
+func TestParseEmbeddedItem(t *testing.T) {
+	html := `<div itemscope>
+			 <p>Name: <span itemprop="name">Amanda</span></p>
+			 <p>Band: <span itemprop="band" itemscope> <span itemprop="name">Jazz Band</span> (<span itemprop="size">12</span> players)</span></p>
+			</div>`
+
+	data := ParseData(html, t)
+
+	if len(data.items) != 1 {
+		t.Errorf("Expecting 1 item but got %d", len(data.items))
+	}
+
+
+	if data.items[0].properties["name"][0].(string) != "Amanda" {
+		t.Errorf("Property value 'Amanda' not found for 'name'")
+	}
+
+	subitem := data.items[0].properties["band"][0].(Item)
+
+	if subitem.properties["name"][0].(string) != "Jazz Band" {
+		t.Errorf("Property value 'Jazz Band' not found for 'name'")
+	}
+}
+
