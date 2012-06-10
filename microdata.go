@@ -27,6 +27,11 @@ func (self *Item) SetString(property string, value string) {
 	self.properties[property] = append(self.properties[property], value)
 }
 
+func (self *Item) SetItem(property string, value *Item) {
+	self.properties[property] = append(self.properties[property], value)
+}
+
+
 type Microdata struct {
 	items []*Item
 }
@@ -111,44 +116,78 @@ func (self *Parser) Parse() (*Microdata, error) {
 
 func (self *Parser) readItem(item *Item, node *h5.Node) {
 	if itemprop, exists := getAttr("itemprop", node); exists {
-		var propertyValue string
+		if _, exists := getAttr("itemscope", node); exists {
+			subitem := NewItem()
 
-		switch node.Data() {
+			if itemrefs, exists := getAttr("itemref", node); exists {
+				for _, itemref := range strings.Split(strings.TrimSpace(itemrefs), " ") {
+					itemref = strings.TrimSpace(itemref)
 
-		case "img", "audio", "source", "video", "embed", "iframe", "track":
-			if urlValue, exists := getAttr("src", node); exists {
-				propertyValue = urlValue
-			}
-		case "a", "area", "link":
-			if urlValue, exists := getAttr("href", node); exists {
-				propertyValue = urlValue
-			}
-		case "data":
-			if urlValue, exists := getAttr("value", node); exists {
-				propertyValue = urlValue
-			}
-		case "time":
-			if urlValue, exists := getAttr("datetime", node); exists {
-				propertyValue = urlValue
+					if refnode, exists := self.identifiedNodes[itemref]; exists {
+						self.readItem(subitem, refnode)
+					}
+				}
 			}
 
-		default:
-			var text bytes.Buffer
-			node.Walk(func(n *h5.Node) {
-				if n.Type == h5.TextNode {
-					text.WriteString(n.Data())
+			if len(node.Children) > 0 {
+				for _, child := range node.Children {
+					self.readItem(subitem, child)
+				}
+			}
+
+			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+				propertyName = strings.TrimSpace(propertyName)
+				if propertyName != "" {
+					item.SetItem(propertyName, subitem)
+				}
+			}
+
+			return
+
+		} else {
+			var propertyValue string
+
+			switch node.Data() {
+
+			case "img", "audio", "source", "video", "embed", "iframe", "track":
+				if urlValue, exists := getAttr("src", node); exists {
+					propertyValue = urlValue
+				}
+			case "a", "area", "link":
+				if urlValue, exists := getAttr("href", node); exists {
+					propertyValue = urlValue
+				}
+			case "data":
+				if urlValue, exists := getAttr("value", node); exists {
+					propertyValue = urlValue
+				}
+			case "time":
+				if urlValue, exists := getAttr("datetime", node); exists {
+					propertyValue = urlValue
 				}
 
-			})
-			propertyValue = text.String()
+			default:
+				var text bytes.Buffer
+				node.Walk(func(n *h5.Node) {
+					if n.Type == h5.TextNode {
+						text.WriteString(n.Data())
+					}
+
+				})
+				propertyValue = text.String()
+			}
+
+			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+				propertyName = strings.TrimSpace(propertyName)
+				if propertyName != "" {
+					item.SetString(propertyName, propertyValue)
+				}
+			}
+
+
 		}
 
-		for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
-			propertyName = strings.TrimSpace(propertyName)
-			if propertyName != "" {
-				item.SetString(propertyName, propertyValue)
-			}
-		}
+
 	}
 
 	if len(node.Children) > 0 {
@@ -156,6 +195,7 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 			self.readItem(item, child)
 		}
 	}
+
 }
 
 func getAttr(name string, node *h5.Node) (string, bool) {

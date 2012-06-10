@@ -465,7 +465,35 @@ func TestParseEmbeddedItem(t *testing.T) {
 		t.Errorf("Property value 'Amanda' not found for 'name'")
 	}
 
-	subitem := data.items[0].properties["band"][0].(Item)
+	subitem := data.items[0].properties["band"][0].(*Item)
+
+	if subitem.properties["name"][0].(string) != "Jazz Band" {
+		t.Errorf("Property value 'Jazz Band' not found for 'name'")
+	}
+}
+
+func TestParseEmbeddedItemWithItemRef(t *testing.T) {
+	html := `<body>
+			<div itemscope id="amanda" itemref="a b"></div>
+		<p id="a">Name: <span itemprop="name">Amanda</span></p>
+		<div id="b" itemprop="band" itemscope itemref="c"></div>
+		<div id="c">
+		 <p>Band: <span itemprop="name">Jazz Band</span></p>
+		 <p>Size: <span itemprop="size">12</span> players</p>
+		</div></body>`
+
+	data := ParseData(html, t)
+
+	if len(data.items) != 1 {
+		t.Errorf("Expecting 1 item but got %d", len(data.items))
+	}
+
+
+	if data.items[0].properties["name"][0].(string) != "Amanda" {
+		t.Errorf("Property value 'Amanda' not found for 'name'")
+	}
+
+	subitem := data.items[0].properties["band"][0].(*Item)
 
 	if subitem.properties["name"][0].(string) != "Jazz Band" {
 		t.Errorf("Property value 'Jazz Band' not found for 'name'")
