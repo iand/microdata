@@ -1,5 +1,7 @@
 microdata - a microdata parser in Go
 
+See [http://www.w3.org/TR/microdata/](http://www.w3.org/TR/microdata/) for more information about Microdata
+
 INSTALLATION
 ============
 
