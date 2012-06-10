@@ -6,7 +6,7 @@ import (
 )
 
 func ParseData(html string, t *testing.T) *Microdata {
-	p := NewParser(strings.NewReader(html))
+	p := NewParser(strings.NewReader(html), url.URL("http://example.com/")
 
 	data, err := p.Parse()
 	if err != nil {

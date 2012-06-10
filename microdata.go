@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
 	"io"
+	"net/url"
 	"strings"
 )
 
@@ -48,7 +49,7 @@ type Parser struct {
 	identifiedNodes map[string]*h5.Node
 }
 
-func NewParser(r io.Reader) *Parser {
+func NewParser(r io.Reader, url.URL) *Parser {
 	return &Parser{
 		p:    h5.NewParser(r),
 		data: NewMicrodata(),
