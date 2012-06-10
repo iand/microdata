@@ -5,6 +5,7 @@
 */
 
 // A package for parsing microdata
+// See http://www.w3.org/TR/microdata/ for more information about Microdata
 package microdata
 
 import (
