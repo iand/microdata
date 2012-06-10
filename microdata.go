@@ -3,6 +3,7 @@ package microdata
 import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
+	"encoding/json"
 	"io"
 	"net/url"
 	"strings"
@@ -12,9 +13,9 @@ type ValueList []interface{}
 type PropertyMap map[string]ValueList
 
 type Item struct {
-	Properties PropertyMap
-	Types      []string
-	ID         string
+	Properties PropertyMap `json:"properties"`
+	Types      []string    `json:"type,omitempty"`
+	ID         string      `json:"id,omitempty"`
 }
 
 func NewItem() *Item {
@@ -32,9 +33,12 @@ func (self *Item) SetItem(property string, value *Item) {
 	self.Properties[property] = append(self.Properties[property], value)
 }
 
+func (self *Item) AddType(value string) {
+	self.Types = append(self.Types, value)
+}
 
 type Microdata struct {
-	Items []*Item
+	Items []*Item `json:"items"`
 }
 
 func NewMicrodata() *Microdata {
@@ -43,10 +47,22 @@ func NewMicrodata() *Microdata {
 	}
 }
 
+func (self *Microdata) AddItem(value *Item) {
+	self.Items = append(self.Items, value)
+}
+
+func (self *Microdata) Json() ([]byte, error) {
+	b, err := json.Marshal(self)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
 type Parser struct {
 	p               *h5.Parser
 	data            *Microdata
-	base 			*url.URL
+	base            *url.URL
 	identifiedNodes map[string]*h5.Node
 }
 
@@ -197,7 +213,6 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 			}
 
 		}
-
 
 	}
 

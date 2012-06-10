@@ -1,6 +1,7 @@
 package microdata
 
 import (
+	"bytes"
 	"net/url"
 	"strings"
 	"testing"
@@ -449,7 +450,6 @@ func TestParseMultiValuedItemRef(t *testing.T) {
 	}
 }
 
-
 func TestParseEmbeddedItem(t *testing.T) {
 	html := `<div itemscope>
 			 <p>Name: <span itemprop="name">Amanda</span></p>
@@ -461,7 +461,6 @@ func TestParseEmbeddedItem(t *testing.T) {
 	if len(data.Items) != 1 {
 		t.Errorf("Expecting 1 item but got %d", len(data.Items))
 	}
-
 
 	if data.Items[0].Properties["name"][0].(string) != "Amanda" {
 		t.Errorf("Property value 'Amanda' not found for 'name'")
@@ -490,7 +489,6 @@ func TestParseEmbeddedItemWithItemRef(t *testing.T) {
 		t.Errorf("Expecting 1 item but got %d", len(data.Items))
 	}
 
-
 	if data.Items[0].Properties["name"][0].(string) != "Amanda" {
 		t.Errorf("Property value 'Amanda' not found for 'name'")
 	}
@@ -501,8 +499,6 @@ func TestParseEmbeddedItemWithItemRef(t *testing.T) {
 		t.Errorf("Property value 'Jazz Band' not found for 'name'")
 	}
 }
-
-
 
 func TestParseRelativeURL(t *testing.T) {
 	html := `
@@ -533,5 +529,38 @@ func TestParseItemRelativeId(t *testing.T) {
 
 	if item.ID != "http://example.com/foo" {
 		t.Errorf("Expecting id of 'http://example.com/foo' but got %d", item.ID)
+	}
+}
+
+func TestJson(t *testing.T) {
+	item := NewItem()
+	item.SetString("name", "Elizabeth")
+
+	data := NewMicrodata()
+	data.AddItem(item)
+
+	expected := []byte(`{"items":[{"properties":{"name":["Elizabeth"]}}]}`)
+
+	actual, _ := data.Json()
+
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("Expecting %s but got %s", expected, actual)
+	}
+}
+
+func TestJsonWithType(t *testing.T) {
+	item := NewItem()
+	item.AddType("http://example.org/animals#cat")
+	item.SetString("name", "Elizabeth")
+
+	data := NewMicrodata()
+	data.AddItem(item)
+
+	expected := []byte(`{"items":[{"properties":{"name":["Elizabeth"]},"type":["http://example.org/animals#cat"]}]}`)
+
+	actual, _ := data.Json()
+
+	if !bytes.Equal(actual, expected) {
+		t.Errorf("Expecting %s but got %s", expected, actual)
 	}
 }
