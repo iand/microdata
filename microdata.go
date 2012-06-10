@@ -12,47 +12,49 @@ type ValueList []interface{}
 type PropertyMap map[string]ValueList
 
 type Item struct {
-	properties PropertyMap
-	types      []string
-	id         string
+	Properties PropertyMap
+	Types      []string
+	ID         string
 }
 
 func NewItem() *Item {
 	return &Item{
-		properties: make(PropertyMap, 0),
-		types:      make([]string, 0),
+		Properties: make(PropertyMap, 0),
+		Types:      make([]string, 0),
 	}
 }
 
 func (self *Item) SetString(property string, value string) {
-	self.properties[property] = append(self.properties[property], value)
+	self.Properties[property] = append(self.Properties[property], value)
 }
 
 func (self *Item) SetItem(property string, value *Item) {
-	self.properties[property] = append(self.properties[property], value)
+	self.Properties[property] = append(self.Properties[property], value)
 }
 
 
 type Microdata struct {
-	items []*Item
+	Items []*Item
 }
 
 func NewMicrodata() *Microdata {
 	return &Microdata{
-		items: make([]*Item, 0),
+		Items: make([]*Item, 0),
 	}
 }
 
 type Parser struct {
 	p               *h5.Parser
 	data            *Microdata
+	base 			*url.URL
 	identifiedNodes map[string]*h5.Node
 }
 
-func NewParser(r io.Reader, url.URL) *Parser {
+func NewParser(r io.Reader, base *url.URL) *Parser {
 	return &Parser{
 		p:    h5.NewParser(r),
 		data: NewMicrodata(),
+		base: base,
 	}
 }
 
@@ -80,17 +82,19 @@ func (self *Parser) Parse() (*Microdata, error) {
 
 	for _, node := range topLevelItemNodes {
 		item := NewItem()
-		self.data.items = append(self.data.items, item)
+		self.data.Items = append(self.data.Items, item)
 		if itemtypes, exists := getAttr("itemtype", node); exists {
 			for _, itemtype := range strings.Split(strings.TrimSpace(itemtypes), " ") {
 				itemtype = strings.TrimSpace(itemtype)
 				if itemtype != "" {
-					item.types = append(item.types, itemtype)
+					item.Types = append(item.Types, itemtype)
 				}
 			}
 			// itemid only valid when itemscope and itemtype are both present
 			if itemid, exists := getAttr("itemid", node); exists {
-				item.id = strings.TrimSpace(itemid)
+				if parsedUrl, err := self.base.Parse(itemid); err == nil {
+					item.ID = parsedUrl.String()
+				}
 			}
 
 		}
@@ -152,11 +156,16 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 
 			case "img", "audio", "source", "video", "embed", "iframe", "track":
 				if urlValue, exists := getAttr("src", node); exists {
-					propertyValue = urlValue
+					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
+						propertyValue = parsedUrl.String()
+					}
+
 				}
 			case "a", "area", "link":
 				if urlValue, exists := getAttr("href", node); exists {
-					propertyValue = urlValue
+					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
+						propertyValue = parsedUrl.String()
+					}
 				}
 			case "data":
 				if urlValue, exists := getAttr("value", node); exists {
@@ -178,13 +187,14 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 				propertyValue = text.String()
 			}
 
-			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
-				propertyName = strings.TrimSpace(propertyName)
-				if propertyName != "" {
-					item.SetString(propertyName, propertyValue)
+			if len(propertyValue) > 0 {
+				for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+					propertyName = strings.TrimSpace(propertyName)
+					if propertyName != "" {
+						item.SetString(propertyName, propertyValue)
+					}
 				}
 			}
-
 
 		}
 
