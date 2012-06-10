@@ -366,3 +366,72 @@ func TestParseItemId(t *testing.T) {
 	}
 }
 
+
+
+func TestParseItemRef(t *testing.T) {
+	html := `<body><p><figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
+   <img itemprop="work" src="images/house.jpeg" alt="A white house, boarded up, sits in a forest.">
+   <figcaption itemprop="title">The house I found.</figcaption>
+  </figure></p>
+   <p id="licenses">All images licensed under the <a itemprop="license"
+   href="http://www.opensource.org/licenses/mit-license.php">MIT
+   license</a>.</p></body>`
+
+	item := ParseOneItem(html, t)
+
+
+	if len(item.properties) != 3 {
+		t.Errorf("Expecting 3 properties but got %d",len(item.properties) )
+	}
+
+	if item.properties["license"][0].(string) != "http://www.opensource.org/licenses/mit-license.php" {
+		t.Errorf("Property value 'http://www.opensource.org/licenses/mit-license.php' not found for 'license'")
+	}
+
+}
+
+func TestParseSharedItemRef(t *testing.T) {
+	html := `<!DOCTYPE HTML>
+		<html>
+		 <head>
+		  <title>Photo gallery</title>
+		 </head>
+		 <body>
+		  <h1>My photos</h1>
+		  <figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
+		   <img itemprop="work" src="images/house.jpeg" alt="A white house, boarded up, sits in a forest.">
+		   <figcaption itemprop="title">The house I found.</figcaption>
+		  </figure>
+		  <figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
+		   <img itemprop="work" src="images/mailbox.jpeg" alt="Outside the house is a mailbox. It has a leaflet inside.">
+		   <figcaption itemprop="title">The mailbox.</figcaption>
+		  </figure>
+		  <footer>
+		   <p id="licenses">All images licensed under the <a itemprop="license"
+		   href="http://www.opensource.org/licenses/mit-license.php">MIT
+		   license</a>.</p>
+		  </footer>
+		 </body>
+		</html>`
+
+	data := ParseData(html, t)
+
+	if len(data.items) != 2 {
+		t.Errorf("Expecting 2 items but got %d",len(data.items) )
+	}
+	if len(data.items[0].properties) != 3 {
+		t.Errorf("Expecting 3 properties but got %d",len(data.items[0].properties) )
+	}
+	if len(data.items[1].properties) != 3 {
+		t.Errorf("Expecting 3 properties but got %d",len(data.items[1].properties) )
+	}
+
+	if data.items[0].properties["license"][0].(string) != "http://www.opensource.org/licenses/mit-license.php" {
+		t.Errorf("Property value 'http://www.opensource.org/licenses/mit-license.php' not found for 'license'")
+	}
+
+	if data.items[1].properties["license"][0].(string) != "http://www.opensource.org/licenses/mit-license.php" {
+		t.Errorf("Property value 'http://www.opensource.org/licenses/mit-license.php' not found for 'license'")
+	}
+
+}

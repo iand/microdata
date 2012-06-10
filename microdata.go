@@ -42,6 +42,7 @@ func NewMicrodata() *Microdata {
 type Parser struct {
 	p *h5.Parser
 	data *Microdata
+	identifiedNodes map[string]*h5.Node
 }
 
 func NewParser(r io.Reader) *Parser {
@@ -58,17 +59,23 @@ func (self *Parser) Parse() (*Microdata, error) {
 	}
 	tree := self.p.Tree()
 
-	self.scanForItem(tree)
+	topLevelItemNodes := make([]*h5.Node, 0)
+	self.identifiedNodes = make(map[string]*h5.Node, 0)
 
-	return self.data, nil
-}
 
-func (self *Parser) scanForItem(node *h5.Node) {
-	if node == nil {
-		return
-	}
+	tree.Walk( func(n *h5.Node) {
+		if _, exists := getAttr("itemscope", n); exists {
+			if _, exists := getAttr("itemprop", n); !exists {
+				topLevelItemNodes = append(topLevelItemNodes, n)
+			}
+		}
 
-	if _, exists := getAttr("itemscope", node); exists {
+		if id, exists := getAttr("id", n); exists {
+			self.identifiedNodes[id] = n
+		}
+		})
+
+	for _, node := range topLevelItemNodes {
 		item := NewItem()
 		self.data.items = append(self.data.items, item)
 		if itemtypes, exists := getAttr("itemtype", node); exists {
@@ -79,28 +86,29 @@ func (self *Parser) scanForItem(node *h5.Node) {
 				}
 			}
 			// itemid only valid when itemscope and itemtype are both present
-			if itemid, exists := getAttr("itemid", node); exists {
+			if itemid, exists := getAttr("itemid", 	node); exists {
 				item.id = strings.TrimSpace(itemid)
 			}
 			
 		} 
 
+		if itemref, exists := getAttr("itemref", node); exists {
+			if refnode, exists := self.identifiedNodes[itemref]; exists {
+	        	self.readItem(item, refnode)
+			}
+		}
 
 		if len(node.Children) > 0 {
 	    	for _, child := range node.Children {
 	        	self.readItem(item, child)
 	        }
 	    }
-
-	} else {
-		if len(node.Children) > 0 {
-	    	for _, child := range node.Children {
-	        	self.scanForItem(child)
-	        }
-		}
 	}
 
+	return self.data, nil
 }
+
+
 
 func (self *Parser) readItem(item *Item, node *h5.Node) {
 	if itemprop, exists := getAttr("itemprop", node); exists {
@@ -133,7 +141,7 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 					}
 
 				})
-			propertyValue = text.String()
+				propertyValue = text.String()
 		}
 
 		for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
@@ -143,6 +151,8 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 			}
 		}
 	}
+
+
 
 	if len(node.Children) > 0 {
     	for _, child := range node.Children {
