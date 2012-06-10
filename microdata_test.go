@@ -5,7 +5,6 @@ import (
 	"testing"
 )
 
-
 func ParseData(html string, t *testing.T) *Microdata {
 	p := NewParser(strings.NewReader(html))
 
@@ -40,7 +39,6 @@ func TestParse(t *testing.T) {
 
 }
 
-
 func TestParseActuallyParses(t *testing.T) {
 	html := `
 	<div itemscope>
@@ -53,7 +51,6 @@ func TestParseActuallyParses(t *testing.T) {
 	}
 
 }
-
 
 func TestParseThreeProps(t *testing.T) {
 	html := `
@@ -77,7 +74,6 @@ func TestParseThreeProps(t *testing.T) {
 		t.Errorf("Property value not found")
 	}
 }
-
 
 func TestParseImgSrc(t *testing.T) {
 	html := `
@@ -158,7 +154,6 @@ func TestParseSourceSrc(t *testing.T) {
 	}
 }
 
-
 func TestParseVideoSrc(t *testing.T) {
 	html := `
 	<div itemscope>
@@ -237,8 +232,6 @@ func TestParseTimeDatetime(t *testing.T) {
 	}
 }
 
-
-
 func TestParseTwoValues(t *testing.T) {
 	html := `
 	<div itemscope>
@@ -251,7 +244,7 @@ func TestParseTwoValues(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 	if len(item.properties["flavor"]) != 2 {
-		t.Errorf("Expecting 2 values but got %d",len(item.properties["flavor"]) )
+		t.Errorf("Expecting 2 values but got %d", len(item.properties["flavor"]))
 	}
 	if item.properties["flavor"][0].(string) != "Lemon sorbet" {
 		t.Errorf("Property value 'Lemon sorbet' not found")
@@ -259,7 +252,6 @@ func TestParseTwoValues(t *testing.T) {
 	if item.properties["flavor"][1].(string) != "Apricot sorbet" {
 		t.Errorf("Property value 'Apricot sorbet' not found")
 	}
-
 
 }
 
@@ -271,13 +263,13 @@ func TestParseTwoPropertiesOneValue(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 	if len(item.properties) != 2 {
-		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
+		t.Errorf("Expecting 2 properties but got %d", len(item.properties))
 	}
 	if len(item.properties["favorite-color"]) != 1 {
-		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-color"]) )
+		t.Errorf("Expecting 1 value but got %d", len(item.properties["favorite-color"]))
 	}
 	if len(item.properties["favorite-fruit"]) != 1 {
-		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-fruit"]) )
+		t.Errorf("Expecting 1 value but got %d", len(item.properties["favorite-fruit"]))
 	}
 	if item.properties["favorite-color"][0].(string) != "orange" {
 		t.Errorf("Property value 'orange' not found for 'favorite-color'")
@@ -295,14 +287,14 @@ func TestParseTwoPropertiesOneValueMultispaced(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 	if len(item.properties) != 2 {
-		t.Errorf("Expecting 2 properties but got %d",len(item.properties) )
+		t.Errorf("Expecting 2 properties but got %d", len(item.properties))
 	}
 
 	if len(item.properties["favorite-color"]) != 1 {
-		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-color"]) )
+		t.Errorf("Expecting 1 value but got %d", len(item.properties["favorite-color"]))
 	}
 	if len(item.properties["favorite-fruit"]) != 1 {
-		t.Errorf("Expecting 1 value but got %d",len(item.properties["favorite-fruit"]) )
+		t.Errorf("Expecting 1 value but got %d", len(item.properties["favorite-fruit"]))
 	}
 	if item.properties["favorite-color"][0].(string) != "orange" {
 		t.Errorf("Property value 'orange' not found for 'favorite-color'")
@@ -320,11 +312,11 @@ func TestParseItemType(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 	if len(item.types) != 1 {
-		t.Errorf("Expecting 1 type but got %d",len(item.types) )	
+		t.Errorf("Expecting 1 type but got %d", len(item.types))
 	}
 
 	if item.types[0] != "http://example.org/animals#cat" {
-		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d",item.types[0]) 
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d", item.types[0])
 	}
 }
 
@@ -336,14 +328,14 @@ func TestParseMultipleItemTypes(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 	if len(item.types) != 2 {
-		t.Errorf("Expecting 2 types but got %d",len(item.types) )	
+		t.Errorf("Expecting 2 types but got %d", len(item.types))
 	}
 
 	if item.types[0] != "http://example.org/animals#mammal" {
-		t.Errorf("Expecting type of 'http://example.org/animals#mammal' but got %d",item.types[0]) 
+		t.Errorf("Expecting type of 'http://example.org/animals#mammal' but got %d", item.types[0])
 	}
 	if item.types[1] != "http://example.org/animals#cat" {
-		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d",item.types[1]) 
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d", item.types[1])
 	}
 }
 
@@ -362,11 +354,9 @@ func TestParseItemId(t *testing.T) {
 	item := ParseOneItem(html, t)
 
 	if item.id != "urn:isbn:0-330-34032-8" {
-		t.Errorf("Expecting id of 'urn:isbn:0-330-34032-8' but got %d",item.id) 
+		t.Errorf("Expecting id of 'urn:isbn:0-330-34032-8' but got %d", item.id)
 	}
 }
-
-
 
 func TestParseItemRef(t *testing.T) {
 	html := `<body><p><figure itemscope itemtype="http://n.whatwg.org/work" itemref="licenses">
@@ -379,9 +369,8 @@ func TestParseItemRef(t *testing.T) {
 
 	item := ParseOneItem(html, t)
 
-
 	if len(item.properties) != 3 {
-		t.Errorf("Expecting 3 properties but got %d",len(item.properties) )
+		t.Errorf("Expecting 3 properties but got %d", len(item.properties))
 	}
 
 	if item.properties["license"][0].(string) != "http://www.opensource.org/licenses/mit-license.php" {
@@ -417,13 +406,13 @@ func TestParseSharedItemRef(t *testing.T) {
 	data := ParseData(html, t)
 
 	if len(data.items) != 2 {
-		t.Errorf("Expecting 2 items but got %d",len(data.items) )
+		t.Errorf("Expecting 2 items but got %d", len(data.items))
 	}
 	if len(data.items[0].properties) != 3 {
-		t.Errorf("Expecting 3 properties but got %d",len(data.items[0].properties) )
+		t.Errorf("Expecting 3 properties but got %d", len(data.items[0].properties))
 	}
 	if len(data.items[1].properties) != 3 {
-		t.Errorf("Expecting 3 properties but got %d",len(data.items[1].properties) )
+		t.Errorf("Expecting 3 properties but got %d", len(data.items[1].properties))
 	}
 
 	if data.items[0].properties["license"][0].(string) != "http://www.opensource.org/licenses/mit-license.php" {
@@ -434,4 +423,26 @@ func TestParseSharedItemRef(t *testing.T) {
 		t.Errorf("Property value 'http://www.opensource.org/licenses/mit-license.php' not found for 'license'")
 	}
 
+}
+
+func TestParseMultiValuedItemRef(t *testing.T) {
+	html := `<!DOCTYPE HTML>
+		<html>
+		 <body>
+		 	<div itemscope id="amanda" itemref="a b"></div>
+			<p id="a">Name: <span itemprop="name">Amanda</span></p>
+			<p id="b">Age: <span itemprop="age">26</span></p>
+
+		 </body>
+		</html>`
+
+	data := ParseData(html, t)
+
+	if data.items[0].properties["name"][0].(string) != "Amanda" {
+		t.Errorf("Property value 'Amanda' not found for 'name'")
+	}
+
+	if data.items[0].properties["age"][0].(string) != "26" {
+		t.Errorf("Property value '26' not found for 'age'")
+	}
 }

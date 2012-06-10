@@ -7,21 +7,19 @@ import (
 	"strings"
 )
 
-
-
 type ValueList []interface{}
 type PropertyMap map[string]ValueList
 
 type Item struct {
 	properties PropertyMap
-	types []string
-	id string
+	types      []string
+	id         string
 }
 
 func NewItem() *Item {
 	return &Item{
 		properties: make(PropertyMap, 0),
-		types: make([]string, 0),
+		types:      make([]string, 0),
 	}
 }
 
@@ -40,14 +38,14 @@ func NewMicrodata() *Microdata {
 }
 
 type Parser struct {
-	p *h5.Parser
-	data *Microdata
+	p               *h5.Parser
+	data            *Microdata
 	identifiedNodes map[string]*h5.Node
 }
 
 func NewParser(r io.Reader) *Parser {
-	return &Parser {
-		p : h5.NewParser(r),
+	return &Parser{
+		p:    h5.NewParser(r),
 		data: NewMicrodata(),
 	}
 }
@@ -62,8 +60,7 @@ func (self *Parser) Parse() (*Microdata, error) {
 	topLevelItemNodes := make([]*h5.Node, 0)
 	self.identifiedNodes = make(map[string]*h5.Node, 0)
 
-
-	tree.Walk( func(n *h5.Node) {
+	tree.Walk(func(n *h5.Node) {
 		if _, exists := getAttr("itemscope", n); exists {
 			if _, exists := getAttr("itemprop", n); !exists {
 				topLevelItemNodes = append(topLevelItemNodes, n)
@@ -73,7 +70,7 @@ func (self *Parser) Parse() (*Microdata, error) {
 		if id, exists := getAttr("id", n); exists {
 			self.identifiedNodes[id] = n
 		}
-		})
+	})
 
 	for _, node := range topLevelItemNodes {
 		item := NewItem()
@@ -86,62 +83,64 @@ func (self *Parser) Parse() (*Microdata, error) {
 				}
 			}
 			// itemid only valid when itemscope and itemtype are both present
-			if itemid, exists := getAttr("itemid", 	node); exists {
+			if itemid, exists := getAttr("itemid", node); exists {
 				item.id = strings.TrimSpace(itemid)
 			}
-			
-		} 
 
-		if itemref, exists := getAttr("itemref", node); exists {
-			if refnode, exists := self.identifiedNodes[itemref]; exists {
-	        	self.readItem(item, refnode)
+		}
+
+		if itemrefs, exists := getAttr("itemref", node); exists {
+			for _, itemref := range strings.Split(strings.TrimSpace(itemrefs), " ") {
+				itemref = strings.TrimSpace(itemref)
+
+				if refnode, exists := self.identifiedNodes[itemref]; exists {
+					self.readItem(item, refnode)
+				}
 			}
 		}
 
 		if len(node.Children) > 0 {
-	    	for _, child := range node.Children {
-	        	self.readItem(item, child)
-	        }
-	    }
+			for _, child := range node.Children {
+				self.readItem(item, child)
+			}
+		}
 	}
 
 	return self.data, nil
 }
 
-
-
 func (self *Parser) readItem(item *Item, node *h5.Node) {
 	if itemprop, exists := getAttr("itemprop", node); exists {
 		var propertyValue string
-		
+
 		switch node.Data() {
 
-		case "img","audio", "source", "video", "embed", "iframe", "track":
+		case "img", "audio", "source", "video", "embed", "iframe", "track":
 			if urlValue, exists := getAttr("src", node); exists {
 				propertyValue = urlValue
-			} 
+			}
 		case "a", "area", "link":
 			if urlValue, exists := getAttr("href", node); exists {
 				propertyValue = urlValue
-			} 
+			}
 		case "data":
 			if urlValue, exists := getAttr("value", node); exists {
 				propertyValue = urlValue
-			} 
+			}
 		case "time":
 			if urlValue, exists := getAttr("datetime", node); exists {
 				propertyValue = urlValue
-			} 
+			}
 
 		default:
 			var text bytes.Buffer
-			node.Walk( func(n *h5.Node) {
-					if n.Type == h5.TextNode {
-						text.WriteString(n.Data())
-					}
+			node.Walk(func(n *h5.Node) {
+				if n.Type == h5.TextNode {
+					text.WriteString(n.Data())
+				}
 
-				})
-				propertyValue = text.String()
+			})
+			propertyValue = text.String()
 		}
 
 		for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
@@ -152,13 +151,11 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 		}
 	}
 
-
-
 	if len(node.Children) > 0 {
-    	for _, child := range node.Children {
-        	self.readItem(item, child)
-        }
-    }
+		for _, child := range node.Children {
+			self.readItem(item, child)
+		}
+	}
 }
 
 func getAttr(name string, node *h5.Node) (string, bool) {
@@ -169,4 +166,3 @@ func getAttr(name string, node *h5.Node) (string, bool) {
 	}
 	return "", false
 }
-
