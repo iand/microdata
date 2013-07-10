@@ -1,7 +1,6 @@
 /*
-  To the extent possible under law, Ian Davis has waived all copyright
-  and related or neighboring rights to this Source Code file.
-  This work is published from the United Kingdom. 
+  This is free and unencumbered software released into the public domain. For more
+  information, see <http://unlicense.org/> or the accompanying UNLICENSE file.
 */
 
 // A package for parsing microdata
@@ -11,6 +10,8 @@ package microdata
 import (
 	"bytes"
 	"code.google.com/p/go-html-transform/h5"
+	"code.google.com/p/go.net/html"
+	"code.google.com/p/go.net/html/atom"
 	"encoding/json"
 	"io"
 	"net/url"
@@ -78,18 +79,20 @@ func (self *Microdata) Json() ([]byte, error) {
 
 // An HTML parser that extracts microdata
 type Parser struct {
-	p               *h5.Parser
+	p               *h5.Tree
 	data            *Microdata
 	base            *url.URL
-	identifiedNodes map[string]*h5.Node
+	identifiedNodes map[string]*html.Node
 }
 
 // Create a new parser for extracting microdata
 // r is a reader over an HTML document
 // base is the base URL for resolving relative URLs
 func NewParser(r io.Reader, base *url.URL) *Parser {
+	p, _ := h5.New(r)
+
 	return &Parser{
-		p:    h5.NewParser(r),
+		p:    p,
 		data: NewMicrodata(),
 		base: base,
 	}
@@ -97,16 +100,12 @@ func NewParser(r io.Reader, base *url.URL) *Parser {
 
 // Parse the document and return a Microdata set
 func (self *Parser) Parse() (*Microdata, error) {
-	err := self.p.Parse()
-	if err != nil {
-		return nil, err
-	}
-	tree := self.p.Tree()
+	tree := self.p
 
-	topLevelItemNodes := make([]*h5.Node, 0)
-	self.identifiedNodes = make(map[string]*h5.Node, 0)
+	topLevelItemNodes := make([]*html.Node, 0)
+	self.identifiedNodes = make(map[string]*html.Node, 0)
 
-	tree.Walk(func(n *h5.Node) {
+	tree.Walk(func(n *html.Node) {
 		if _, exists := getAttr("itemscope", n); exists {
 			if _, exists := getAttr("itemprop", n); !exists {
 				topLevelItemNodes = append(topLevelItemNodes, n)
@@ -147,17 +146,16 @@ func (self *Parser) Parse() (*Microdata, error) {
 			}
 		}
 
-		if len(node.Children) > 0 {
-			for _, child := range node.Children {
-				self.readItem(item, child)
-			}
+		for child := node.FirstChild; child != nil; {
+			self.readItem(item, child)
+			child = child.NextSibling
 		}
 	}
 
 	return self.data, nil
 }
 
-func (self *Parser) readItem(item *Item, node *h5.Node) {
+func (self *Parser) readItem(item *Item, node *html.Node) {
 	if itemprop, exists := getAttr("itemprop", node); exists {
 		if _, exists := getAttr("itemscope", node); exists {
 			subitem := NewItem()
@@ -172,10 +170,9 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 				}
 			}
 
-			if len(node.Children) > 0 {
-				for _, child := range node.Children {
-					self.readItem(subitem, child)
-				}
+			for child := node.FirstChild; child != nil; {
+				self.readItem(subitem, child)
+				child = child.NextSibling
 			}
 
 			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
@@ -190,35 +187,42 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 		} else {
 			var propertyValue string
 
-			switch node.Data() {
-
-			case "img", "audio", "source", "video", "embed", "iframe", "track":
+			switch node.DataAtom {
+			case atom.Meta:
+				if val, exists := getAttr("content", node); exists {
+					propertyValue = val
+				}
+			case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
 				if urlValue, exists := getAttr("src", node); exists {
 					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
 						propertyValue = parsedUrl.String()
 					}
 
 				}
-			case "a", "area", "link":
+			case atom.A, atom.Area, atom.Link:
 				if urlValue, exists := getAttr("href", node); exists {
 					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
 						propertyValue = parsedUrl.String()
 					}
 				}
-			case "data":
+			case atom.Object:
+				if urlValue, exists := getAttr("data", node); exists {
+					propertyValue = urlValue
+				}
+			case atom.Data, atom.Meter:
 				if urlValue, exists := getAttr("value", node); exists {
 					propertyValue = urlValue
 				}
-			case "time":
+			case atom.Time:
 				if urlValue, exists := getAttr("datetime", node); exists {
 					propertyValue = urlValue
 				}
 
 			default:
 				var text bytes.Buffer
-				node.Walk(func(n *h5.Node) {
-					if n.Type == h5.TextNode {
-						text.WriteString(n.Data())
+				h5.WalkNodes(node, func(n *html.Node) {
+					if n.Type == html.TextNode {
+						text.WriteString(n.Data)
 					}
 
 				})
@@ -238,18 +242,17 @@ func (self *Parser) readItem(item *Item, node *h5.Node) {
 
 	}
 
-	if len(node.Children) > 0 {
-		for _, child := range node.Children {
-			self.readItem(item, child)
-		}
+	for child := node.FirstChild; child != nil; {
+		self.readItem(item, child)
+		child = child.NextSibling
 	}
 
 }
 
-func getAttr(name string, node *h5.Node) (string, bool) {
+func getAttr(name string, node *html.Node) (string, bool) {
 	for _, a := range node.Attr {
-		if a.Name == name {
-			return a.Value, true
+		if a.Key == name {
+			return a.Val, true
 		}
 	}
 	return "", false
