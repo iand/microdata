@@ -55,7 +55,7 @@ func TestParseActuallyParses(t *testing.T) {
 	item := ParseOneItem(html, t)
 
 	if item.Properties["name"][0].(string) != "Daniel" {
-		t.Errorf("Property value not found")
+		t.Errorf("got %v, wanted %s", item.Properties["name"][0], "Daniel")
 	}
 
 }
@@ -113,7 +113,7 @@ func TestParseAreaHref(t *testing.T) {
 	html := `
 	<div itemscope><map name="shapes">
 	 <area itemprop="foo" href="http://example.com/foo" shape=rect coords="50,50,100,100">
-	
+
 	</map></div>`
 
 	item := ParseOneItem(html, t)

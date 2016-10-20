@@ -38,37 +38,38 @@ Example of parsing a string containing HTML:
 		}
 
 		println("Name: ", data.Items[0].Properties["name"][0].(string))
-	}		
+	}
 
 Extract microdata from a webpage and print the result as JSON
 
 	package main
 
 	import (
-		"bytes"
-		"github.com/iand/microdata"
-		"io/ioutil"
-		"net/http"
-		"net/url"
-		"os"
+	    "bytes"
+	    "io/ioutil"
+	    "net/http"
+	    "net/url"
+	    "os"
+
+	    "github.com/iand/microdata"
 	)
 
 	func main() {
 
-		baseUrl, _ := url.Parse("http://tagger.steve.museum/steve/object/44863?offset=6")
+	    baseUrl, _ := url.Parse("http://www.designhive.com/blog/using-schemaorg-microdata")
 
-		resp, _ := http.Get(baseUrl.String())
-		defer resp.Body.Close()
+	    resp, _ := http.Get(baseUrl.String())
+	    defer resp.Body.Close()
 
-		html, _ := ioutil.ReadAll(resp.Body)
+	    html, _ := ioutil.ReadAll(resp.Body)
 
-		p := microdata.NewParser(bytes.NewReader(html), baseUrl)
+	    p := microdata.NewParser(bytes.NewReader(html), baseUrl)
 
-		data, _ := p.Parse()
+	    data, _ := p.Parse()
 
-		json, _ := data.Json()
-		os.Stdout.Write(json)
-	}		
+	    json, _ := data.Json()
+	    os.Stdout.Write(json)
+	}
 
 
 ## Authors
@@ -83,11 +84,11 @@ Extract microdata from a webpage and print the result as JSON
 
 * Do submit your changes as a pull request
 * Do your best to adhere to the existing coding conventions and idioms.
-* Do run `go fmt` on the code before committing 
+* Do run `go fmt` on the code before committing
 * Do feel free to add yourself to the [`CREDITS`](CREDITS) file and the
-  corresponding Contributors list in the the [`README.md`](README.md). 
+  corresponding Contributors list in the the [`README.md`](README.md).
   Alphabetical order applies.
-* Don't touch the [`AUTHORS`](AUTHORS) file. An existing author will add you if 
+* Don't touch the [`AUTHORS`](AUTHORS) file. An existing author will add you if
   your contributions are significant enough.
 * Do note that in order for any non-trivial changes to be merged (as a rule
   of thumb, additions larger than about 15 lines of code), an explicit

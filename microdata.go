@@ -9,13 +9,13 @@ package microdata
 
 import (
 	"bytes"
-	"code.google.com/p/go-html-transform/h5"
-	"code.google.com/p/go.net/html"
-	"code.google.com/p/go.net/html/atom"
 	"encoding/json"
 	"io"
 	"net/url"
 	"strings"
+
+	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 type ValueList []interface{}
@@ -37,18 +37,18 @@ func NewItem() *Item {
 }
 
 // Add a string type item property value
-func (self *Item) AddString(property string, value string) {
-	self.Properties[property] = append(self.Properties[property], value)
+func (i *Item) AddString(property string, value string) {
+	i.Properties[property] = append(i.Properties[property], value)
 }
 
 // Add an Item type item property value
-func (self *Item) AddItem(property string, value *Item) {
-	self.Properties[property] = append(self.Properties[property], value)
+func (i *Item) AddItem(property string, value *Item) {
+	i.Properties[property] = append(i.Properties[property], value)
 }
 
 // Add a type to the item
-func (self *Item) AddType(value string) {
-	self.Types = append(self.Types, value)
+func (i *Item) AddType(value string) {
+	i.Types = append(i.Types, value)
 }
 
 // Represents a set of microdata items
@@ -64,13 +64,13 @@ func NewMicrodata() *Microdata {
 }
 
 // Add an item to the microdata set
-func (self *Microdata) AddItem(value *Item) {
-	self.Items = append(self.Items, value)
+func (m *Microdata) AddItem(value *Item) {
+	m.Items = append(m.Items, value)
 }
 
 // Convert the microdata set to JSON
-func (self *Microdata) Json() ([]byte, error) {
-	b, err := json.Marshal(self)
+func (m *Microdata) Json() ([]byte, error) {
+	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (self *Microdata) Json() ([]byte, error) {
 
 // An HTML parser that extracts microdata
 type Parser struct {
-	p               *h5.Tree
+	r               io.Reader
 	data            *Microdata
 	base            *url.URL
 	identifiedNodes map[string]*html.Node
@@ -89,37 +89,40 @@ type Parser struct {
 // r is a reader over an HTML document
 // base is the base URL for resolving relative URLs
 func NewParser(r io.Reader, base *url.URL) *Parser {
-	p, _ := h5.New(r)
-
 	return &Parser{
-		p:    p,
+		r:    r,
 		data: NewMicrodata(),
 		base: base,
 	}
 }
 
 // Parse the document and return a Microdata set
-func (self *Parser) Parse() (*Microdata, error) {
-	tree := self.p
+func (p *Parser) Parse() (*Microdata, error) {
+	tree, err := html.Parse(p.r)
+	if err != nil {
+		return nil, err
+	}
 
 	topLevelItemNodes := make([]*html.Node, 0)
-	self.identifiedNodes = make(map[string]*html.Node, 0)
+	p.identifiedNodes = make(map[string]*html.Node, 0)
 
-	tree.Walk(func(n *html.Node) {
-		if _, exists := getAttr("itemscope", n); exists {
-			if _, exists := getAttr("itemprop", n); !exists {
-				topLevelItemNodes = append(topLevelItemNodes, n)
+	walk(tree, func(n *html.Node) {
+		if n.Type == html.ElementNode {
+			if _, exists := getAttr("itemscope", n); exists {
+				if _, exists := getAttr("itemprop", n); !exists {
+					topLevelItemNodes = append(topLevelItemNodes, n)
+				}
 			}
-		}
 
-		if id, exists := getAttr("id", n); exists {
-			self.identifiedNodes[id] = n
+			if id, exists := getAttr("id", n); exists {
+				p.identifiedNodes[id] = n
+			}
 		}
 	})
 
 	for _, node := range topLevelItemNodes {
 		item := NewItem()
-		self.data.Items = append(self.data.Items, item)
+		p.data.Items = append(p.data.Items, item)
 		if itemtypes, exists := getAttr("itemtype", node); exists {
 			for _, itemtype := range strings.Split(strings.TrimSpace(itemtypes), " ") {
 				itemtype = strings.TrimSpace(itemtype)
@@ -129,7 +132,7 @@ func (self *Parser) Parse() (*Microdata, error) {
 			}
 			// itemid only valid when itemscope and itemtype are both present
 			if itemid, exists := getAttr("itemid", node); exists {
-				if parsedUrl, err := self.base.Parse(itemid); err == nil {
+				if parsedUrl, err := p.base.Parse(itemid); err == nil {
 					item.ID = parsedUrl.String()
 				}
 			}
@@ -140,22 +143,22 @@ func (self *Parser) Parse() (*Microdata, error) {
 			for _, itemref := range strings.Split(strings.TrimSpace(itemrefs), " ") {
 				itemref = strings.TrimSpace(itemref)
 
-				if refnode, exists := self.identifiedNodes[itemref]; exists {
-					self.readItem(item, refnode)
+				if refnode, exists := p.identifiedNodes[itemref]; exists {
+					p.readItem(item, refnode)
 				}
 			}
 		}
 
 		for child := node.FirstChild; child != nil; {
-			self.readItem(item, child)
+			p.readItem(item, child)
 			child = child.NextSibling
 		}
 	}
 
-	return self.data, nil
+	return p.data, nil
 }
 
-func (self *Parser) readItem(item *Item, node *html.Node) {
+func (p *Parser) readItem(item *Item, node *html.Node) {
 	if itemprop, exists := getAttr("itemprop", node); exists {
 		if _, exists := getAttr("itemscope", node); exists {
 			subitem := NewItem()
@@ -164,14 +167,14 @@ func (self *Parser) readItem(item *Item, node *html.Node) {
 				for _, itemref := range strings.Split(strings.TrimSpace(itemrefs), " ") {
 					itemref = strings.TrimSpace(itemref)
 
-					if refnode, exists := self.identifiedNodes[itemref]; exists {
-						self.readItem(subitem, refnode)
+					if refnode, exists := p.identifiedNodes[itemref]; exists {
+						p.readItem(subitem, refnode)
 					}
 				}
 			}
 
 			for child := node.FirstChild; child != nil; {
-				self.readItem(subitem, child)
+				p.readItem(subitem, child)
 				child = child.NextSibling
 			}
 
@@ -184,66 +187,65 @@ func (self *Parser) readItem(item *Item, node *html.Node) {
 
 			return
 
-		} else {
-			var propertyValue string
+		}
 
-			switch node.DataAtom {
-			case atom.Meta:
-				if val, exists := getAttr("content", node); exists {
-					propertyValue = val
-				}
-			case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
-				if urlValue, exists := getAttr("src", node); exists {
-					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
-						propertyValue = parsedUrl.String()
-					}
+		var propertyValue string
 
-				}
-			case atom.A, atom.Area, atom.Link:
-				if urlValue, exists := getAttr("href", node); exists {
-					if parsedUrl, err := self.base.Parse(urlValue); err == nil {
-						propertyValue = parsedUrl.String()
-					}
-				}
-			case atom.Object:
-				if urlValue, exists := getAttr("data", node); exists {
-					propertyValue = urlValue
-				}
-			case atom.Data, atom.Meter:
-				if urlValue, exists := getAttr("value", node); exists {
-					propertyValue = urlValue
-				}
-			case atom.Time:
-				if urlValue, exists := getAttr("datetime", node); exists {
-					propertyValue = urlValue
-				}
-
-			default:
-				var text bytes.Buffer
-				h5.WalkNodes(node, func(n *html.Node) {
-					if n.Type == html.TextNode {
-						text.WriteString(n.Data)
-					}
-
-				})
-				propertyValue = text.String()
+		switch node.DataAtom {
+		case atom.Meta:
+			if val, exists := getAttr("content", node); exists {
+				propertyValue = val
 			}
+		case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
+			if urlValue, exists := getAttr("src", node); exists {
+				if parsedUrl, err := p.base.Parse(urlValue); err == nil {
+					propertyValue = parsedUrl.String()
+				}
 
-			if len(propertyValue) > 0 {
-				for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
-					propertyName = strings.TrimSpace(propertyName)
-					if propertyName != "" {
-						item.AddString(propertyName, propertyValue)
-					}
+			}
+		case atom.A, atom.Area, atom.Link:
+			if urlValue, exists := getAttr("href", node); exists {
+				if parsedUrl, err := p.base.Parse(urlValue); err == nil {
+					propertyValue = parsedUrl.String()
 				}
 			}
+		case atom.Object:
+			if urlValue, exists := getAttr("data", node); exists {
+				propertyValue = urlValue
+			}
+		case atom.Data, atom.Meter:
+			if urlValue, exists := getAttr("value", node); exists {
+				propertyValue = urlValue
+			}
+		case atom.Time:
+			if urlValue, exists := getAttr("datetime", node); exists {
+				propertyValue = urlValue
+			}
 
+		default:
+			var text bytes.Buffer
+			walk(node, func(n *html.Node) {
+				if n.Type == html.TextNode {
+					text.WriteString(n.Data)
+				}
+
+			})
+			propertyValue = text.String()
+		}
+
+		if len(propertyValue) > 0 {
+			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+				propertyName = strings.TrimSpace(propertyName)
+				if propertyName != "" {
+					item.AddString(propertyName, propertyValue)
+				}
+			}
 		}
 
 	}
 
 	for child := node.FirstChild; child != nil; {
-		self.readItem(item, child)
+		p.readItem(item, child)
 		child = child.NextSibling
 	}
 
@@ -256,4 +258,16 @@ func getAttr(name string, node *html.Node) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+func walk(parent *html.Node, fn func(n *html.Node)) {
+	if parent == nil {
+		return
+	}
+	fn(parent)
+
+	for child := parent.FirstChild; child != nil; {
+		walk(child, fn)
+		child = child.NextSibling
+	}
 }
