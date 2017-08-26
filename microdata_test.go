@@ -324,7 +324,7 @@ func TestParseItemType(t *testing.T) {
 	}
 
 	if item.Types[0] != "http://example.org/animals#cat" {
-		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d", item.Types[0])
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %s", item.Types[0])
 	}
 }
 
@@ -340,10 +340,10 @@ func TestParseMultipleItemTypes(t *testing.T) {
 	}
 
 	if item.Types[0] != "http://example.org/animals#mammal" {
-		t.Errorf("Expecting type of 'http://example.org/animals#mammal' but got %d", item.Types[0])
+		t.Errorf("Expecting type of 'http://example.org/animals#mammal' but got %s", item.Types[0])
 	}
 	if item.Types[1] != "http://example.org/animals#cat" {
-		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %d", item.Types[1])
+		t.Errorf("Expecting type of 'http://example.org/animals#cat' but got %s", item.Types[1])
 	}
 }
 
@@ -362,7 +362,7 @@ func TestParseItemId(t *testing.T) {
 	item := ParseOneItem(html, t)
 
 	if item.ID != "urn:isbn:0-330-34032-8" {
-		t.Errorf("Expecting id of 'urn:isbn:0-330-34032-8' but got %d", item.ID)
+		t.Errorf("Expecting id of 'urn:isbn:0-330-34032-8' but got %s", item.ID)
 	}
 }
 
@@ -533,11 +533,11 @@ func TestParseItemRelativeId(t *testing.T) {
 	item := ParseOneItem(html, t)
 
 	if item.ID != "http://example.com/foo" {
-		t.Errorf("Expecting id of 'http://example.com/foo' but got %d", item.ID)
+		t.Errorf("Expecting id of 'http://example.com/foo' but got %s", item.ID)
 	}
 }
 
-func TestJson(t *testing.T) {
+func TestJSON(t *testing.T) {
 	item := NewItem()
 	item.AddString("name", "Elizabeth")
 
@@ -546,7 +546,7 @@ func TestJson(t *testing.T) {
 
 	expected := []byte(`{"items":[{"properties":{"name":["Elizabeth"]}}]}`)
 
-	actual, _ := data.Json()
+	actual, _ := data.JSON()
 
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("Expecting %s but got %s", expected, actual)
@@ -563,7 +563,7 @@ func TestJsonWithType(t *testing.T) {
 
 	expected := []byte(`{"items":[{"properties":{"name":["Elizabeth"]},"type":["http://example.org/animals#cat"]}]}`)
 
-	actual, _ := data.Json()
+	actual, _ := data.JSON()
 
 	if !bytes.Equal(actual, expected) {
 		t.Errorf("Expecting %s but got %s", expected, actual)

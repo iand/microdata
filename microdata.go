@@ -3,7 +3,7 @@
   information, see <http://unlicense.org/> or the accompanying UNLICENSE file.
 */
 
-// A package for parsing microdata
+// Package microdata provides types and functions for paring microdata from web pages.
 // See http://www.w3.org/TR/microdata/ for more information about Microdata
 package microdata
 
@@ -21,14 +21,14 @@ import (
 type ValueList []interface{}
 type PropertyMap map[string]ValueList
 
-// Represents a microdata item
+// Item represents a microdata item
 type Item struct {
 	Properties PropertyMap `json:"properties"`
 	Types      []string    `json:"type,omitempty"`
 	ID         string      `json:"id,omitempty"`
 }
 
-// Create a new microdata item
+// NewItem creates a new microdata item
 func NewItem() *Item {
 	return &Item{
 		Properties: make(PropertyMap, 0),
@@ -36,40 +36,40 @@ func NewItem() *Item {
 	}
 }
 
-// Add a string type item property value
+// AddString adds a string type item property value
 func (i *Item) AddString(property string, value string) {
 	i.Properties[property] = append(i.Properties[property], value)
 }
 
-// Add an Item type item property value
+// AddItem adds an Item type item property value
 func (i *Item) AddItem(property string, value *Item) {
 	i.Properties[property] = append(i.Properties[property], value)
 }
 
-// Add a type to the item
+// AddType adds a type to the item
 func (i *Item) AddType(value string) {
 	i.Types = append(i.Types, value)
 }
 
-// Represents a set of microdata items
+// Microdata represents a set of microdata items
 type Microdata struct {
 	Items []*Item `json:"items"`
 }
 
-// Create a new microdata set
+// NewMicrodata creates a new microdata set
 func NewMicrodata() *Microdata {
 	return &Microdata{
 		Items: make([]*Item, 0),
 	}
 }
 
-// Add an item to the microdata set
+// AddItem adds an item to the microdata set
 func (m *Microdata) AddItem(value *Item) {
 	m.Items = append(m.Items, value)
 }
 
-// Convert the microdata set to JSON
-func (m *Microdata) Json() ([]byte, error) {
+// JSON converts the microdata set to JSON
+func (m *Microdata) JSON() ([]byte, error) {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil, err
@@ -77,7 +77,7 @@ func (m *Microdata) Json() ([]byte, error) {
 	return b, nil
 }
 
-// An HTML parser that extracts microdata
+// Parser is an HTML parser that extracts microdata
 type Parser struct {
 	r               io.Reader
 	data            *Microdata
@@ -85,7 +85,7 @@ type Parser struct {
 	identifiedNodes map[string]*html.Node
 }
 
-// Create a new parser for extracting microdata
+// NewParser creates a new parser for extracting microdata
 // r is a reader over an HTML document
 // base is the base URL for resolving relative URLs
 func NewParser(r io.Reader, base *url.URL) *Parser {
