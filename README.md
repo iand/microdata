@@ -69,7 +69,7 @@ Extract microdata from a webpage and print the result as JSON
 
 	    data, _ := p.Parse()
 
-	    json, _ := data.Json()
+	    json, _ := data.JSON()
 	    os.Stdout.Write(json)
 	}
 
