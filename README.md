@@ -1,4 +1,5 @@
 # microdata
+
 A microdata parser in Go
 
 See [http://www.w3.org/TR/microdata/](http://www.w3.org/TR/microdata/) for more information about Microdata
@@ -9,78 +10,78 @@ See [http://www.w3.org/TR/microdata/](http://www.w3.org/TR/microdata/) for more 
 
 Simply run
 
-	go get github.com/iand/microdata
+    go get github.com/iand/microdata
 
 Documentation is at [http://godoc.org/github.com/iand/microdata](http://godoc.org/github.com/iand/microdata)
-
 
 ## Usage
 
 Example of parsing a string containing HTML:
 
-	package main
+```go
+package main
 
-	import (
-		"github.com/iand/microdata"
-		"net/url"
-		"strings"
-	)
+import (
+    "github.com/iand/microdata"
+    "net/url"
+    "strings"
+)
 
-	func main() {
-		html := `<div itemscope>
-		 <p>My name is <span itemprop="name">Elizabeth</span>.</p>
-		</div>`
+func main() {
+    html := `<div itemscope>
+        <p>My name is <span itemprop="name">Elizabeth</span>.</p>
+    </div>`
 
-		baseUrl, _ := url.Parse("http://example.com/")
-		p := microdata.NewParser(strings.NewReader(html), baseUrl)
+    baseUrl, _ := url.Parse("http://example.com/")
+    p := microdata.NewParser(strings.NewReader(html), baseUrl)
 
-		data, err := p.Parse()
-		if err != nil {
-			panic(err)
-		}
+    data, err := p.Parse()
+    if err != nil {
+        panic(err)
+    }
 
-		println("Name: ", data.Items[0].Properties["name"][0].(string))
-	}
+    println("Name: ", data.Items[0].Properties["name"][0].(string))
+}
+```
 
 Extract microdata from a webpage and print the result as JSON
 
-	package main
+```go
+package main
 
-	import (
-	    "bytes"
-	    "io/ioutil"
-	    "net/http"
-	    "net/url"
-	    "os"
+import (
+    "bytes"
+    "io/ioutil"
+    "net/http"
+    "net/url"
+    "os"
 
-	    "github.com/iand/microdata"
-	)
+    "github.com/iand/microdata"
+)
 
-	func main() {
+func main() {
 
-	    baseUrl, _ := url.Parse("http://www.designhive.com/blog/using-schemaorg-microdata")
+    baseUrl, _ := url.Parse("http://www.designhive.com/blog/using-schemaorg-microdata")
 
-	    resp, _ := http.Get(baseUrl.String())
-	    defer resp.Body.Close()
+    resp, _ := http.Get(baseUrl.String())
+    defer resp.Body.Close()
 
-	    html, _ := ioutil.ReadAll(resp.Body)
+    html, _ := ioutil.ReadAll(resp.Body)
 
-	    p := microdata.NewParser(bytes.NewReader(html), baseUrl)
+    p := microdata.NewParser(bytes.NewReader(html), baseUrl)
 
-	    data, _ := p.Parse()
+    data, _ := p.Parse()
 
-	    json, _ := data.JSON()
-	    os.Stdout.Write(json)
-	}
-
+    json, _ := data.JSON()
+    os.Stdout.Write(json)
+}
+```
 
 ## Authors
 
 * [Ian Davis](http://github.com/iand) - <http://iandavis.com/>
 
-
 ## Contributors
-
 
 ## Contributing
 

@@ -18,12 +18,12 @@ import (
 	"golang.org/x/net/html/atom"
 )
 
-type ValueList []interface{}
-type PropertyMap map[string]ValueList
+type valueList []interface{}
+type propertyMap map[string]valueList
 
 // Item represents a microdata item
 type Item struct {
-	Properties PropertyMap `json:"properties"`
+	Properties propertyMap `json:"properties"`
 	Types      []string    `json:"type,omitempty"`
 	ID         string      `json:"id,omitempty"`
 }
@@ -31,7 +31,7 @@ type Item struct {
 // NewItem creates a new microdata item
 func NewItem() *Item {
 	return &Item{
-		Properties: make(PropertyMap, 0),
+		Properties: make(propertyMap, 0),
 		Types:      make([]string, 0),
 	}
 }
@@ -132,11 +132,10 @@ func (p *Parser) Parse() (*Microdata, error) {
 			}
 			// itemid only valid when itemscope and itemtype are both present
 			if itemid, exists := getAttr("itemid", node); exists {
-				if parsedUrl, err := p.base.Parse(itemid); err == nil {
-					item.ID = parsedUrl.String()
+				if parsedURL, err := p.base.Parse(itemid); err == nil {
+					item.ID = parsedURL.String()
 				}
 			}
-
 		}
 
 		if itemrefs, exists := getAttr("itemref", node); exists {
@@ -168,7 +167,9 @@ func (p *Parser) readItem(item *Item, node *html.Node) {
 					itemref = strings.TrimSpace(itemref)
 
 					if refnode, exists := p.identifiedNodes[itemref]; exists {
-						p.readItem(subitem, refnode)
+						if refnode != node {
+							p.readItem(subitem, refnode)
+						}
 					}
 				}
 			}
@@ -198,15 +199,14 @@ func (p *Parser) readItem(item *Item, node *html.Node) {
 			}
 		case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
 			if urlValue, exists := getAttr("src", node); exists {
-				if parsedUrl, err := p.base.Parse(urlValue); err == nil {
-					propertyValue = parsedUrl.String()
+				if parsedURL, err := p.base.Parse(urlValue); err == nil {
+					propertyValue = parsedURL.String()
 				}
-
 			}
 		case atom.A, atom.Area, atom.Link:
 			if urlValue, exists := getAttr("href", node); exists {
-				if parsedUrl, err := p.base.Parse(urlValue); err == nil {
-					propertyValue = parsedUrl.String()
+				if parsedURL, err := p.base.Parse(urlValue); err == nil {
+					propertyValue = parsedURL.String()
 				}
 			}
 		case atom.Object:
