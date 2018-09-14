@@ -167,7 +167,9 @@ func (p *Parser) readItem(item *Item, node *html.Node) {
 					itemref = strings.TrimSpace(itemref)
 
 					if refnode, exists := p.identifiedNodes[itemref]; exists {
-						p.readItem(subitem, refnode)
+						if refnode != node {
+							p.readItem(subitem, refnode)
+						}
 					}
 				}
 			}

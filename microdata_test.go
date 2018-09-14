@@ -8,6 +8,7 @@ package microdata
 import (
 	"bytes"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -566,6 +567,33 @@ func TestJsonWithType(t *testing.T) {
 	actual, _ := data.JSON()
 
 	if !bytes.Equal(actual, expected) {
+		t.Errorf("Expecting %s but got %s", expected, actual)
+	}
+}
+
+// This test checks stack overflow doesn't happen as mentioned in
+// https://github.com/iand/microdata/issues/3
+func TestSkipSelfReferencingItemref(t *testing.T) {
+	html := `<body itemscope itemtype="http://schema.org/WebPage">
+	  <span id="1" itemscope itemtype="http://data-vocabulary.org/Breadcrumb" itemprop="child" itemref="1">
+	    <a title="Foo" itemprop="url" href="/foo/bar"><span itemprop="title">Foo</span></a>
+	  </span>
+	</body>`
+
+	actual := ParseData(html, t)
+
+	child := NewItem()
+	child.AddString("title", "Foo")
+	child.AddString("url", "http://example.com/foo/bar")
+
+	item := NewItem()
+	item.AddType("http://schema.org/WebPage")
+	item.AddItem("child", child)
+
+	expected := NewMicrodata()
+	expected.AddItem(item)
+
+	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Expecting %s but got %s", expected, actual)
 	}
 }
