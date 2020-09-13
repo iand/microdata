@@ -594,6 +594,6 @@ func TestSkipSelfReferencingItemref(t *testing.T) {
 	expected.AddItem(item)
 
 	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("Expecting %s but got %s", expected, actual)
+		t.Errorf("Expecting %v but got %v", expected, actual)
 	}
 }
