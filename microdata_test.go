@@ -583,8 +583,9 @@ func TestSkipSelfReferencingItemref(t *testing.T) {
 	actual := ParseData(html, t)
 
 	child := NewItem()
-	child.AddString("title", "Foo")
+	child.AddType("http://data-vocabulary.org/Breadcrumb")
 	child.AddString("url", "http://example.com/foo/bar")
+	child.AddString("title", "Foo")
 
 	item := NewItem()
 	item.AddType("http://schema.org/WebPage")
@@ -603,18 +604,16 @@ func TestSkipSelfReferencingItemref(t *testing.T) {
 // of its container item.
 func TestPropertiesInContainedItem(t *testing.T) {
 	html := `
-      <body itemscope itemtype="http://schema.org/WebPage">
-        <meta itemprop="foo" content="foo value">
+		<body itemscope itemtype="http://schema.org/WebPage">
+			<meta itemprop="foo" content="foo value">
 
-		<div itemscope itemtype="http://schema.org/Person">
-		  <meta itemprop="bar" content="bar value">
-		</div>
-
-		<div itemscope itemtype="http://schema.org/Person" itemprop="author">
-		  <meta itemprop="baz" content="baz value">
-		</div>
-
-	  </body>`
+			<div itemscope itemtype="http://schema.org/Person">
+				<meta itemprop="bar" content="bar value">
+			</div>
+			<div itemscope itemtype="http://schema.org/Person" itemprop="author">
+				<meta itemprop="baz" content="baz value">
+			</div>
+		</body>`
 
 	actual := ParseData(html, t)
 

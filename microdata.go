@@ -121,8 +121,18 @@ func (p *Parser) Parse() (*Microdata, error) {
 	})
 
 	for _, node := range topLevelItemNodes {
-		item := NewItem()
-		p.data.Items = append(p.data.Items, item)
+		p.data.Items = append(p.data.Items, p.readItem(nil, node))
+	}
+
+	return p.data, nil
+}
+
+func (p *Parser) readItem(item *Item, node *html.Node) *Item {
+	var parent *Item
+
+	if _, exists := getAttr("itemscope", node); exists {
+		parent, item = item, NewItem()
+
 		if itemtypes, exists := getAttr("itemtype", node); exists {
 			for _, itemtype := range strings.Split(strings.TrimSpace(itemtypes), " ") {
 				itemtype = strings.TrimSpace(itemtype)
@@ -143,105 +153,76 @@ func (p *Parser) Parse() (*Microdata, error) {
 				itemref = strings.TrimSpace(itemref)
 
 				if refnode, exists := p.identifiedNodes[itemref]; exists {
-					p.readItem(item, refnode)
-				}
-			}
-		}
-
-		for child := node.FirstChild; child != nil; {
-			p.readItem(item, child)
-			child = child.NextSibling
-		}
-	}
-
-	return p.data, nil
-}
-
-func (p *Parser) readItem(item *Item, node *html.Node) {
-	if itemprop, exists := getAttr("itemprop", node); exists {
-		if _, exists := getAttr("itemscope", node); exists {
-			subitem := NewItem()
-
-			if itemrefs, exists := getAttr("itemref", node); exists {
-				for _, itemref := range strings.Split(strings.TrimSpace(itemrefs), " ") {
-					itemref = strings.TrimSpace(itemref)
-
-					if refnode, exists := p.identifiedNodes[itemref]; exists {
-						if refnode != node {
-							p.readItem(subitem, refnode)
-						}
+					if refnode != node {
+						p.readItem(item, refnode)
 					}
 				}
 			}
+		}
+	}
 
-			for child := node.FirstChild; child != nil; {
-				p.readItem(subitem, child)
-				child = child.NextSibling
-			}
-
+	if itemprop, exists := getAttr("itemprop", node); exists {
+		if parent != nil {
+			// an itemprop on an itemscope has value of the item created by the itemscope
 			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
 				propertyName = strings.TrimSpace(propertyName)
 				if propertyName != "" {
-					item.AddItem(propertyName, subitem)
+					parent.AddItem(propertyName, item)
 				}
 			}
+		} else {
+			var propertyValue string
 
-			return
-
-		}
-
-		var propertyValue string
-
-		switch node.DataAtom {
-		case atom.Meta:
-			if val, exists := getAttr("content", node); exists {
-				propertyValue = val
-			}
-		case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
-			if urlValue, exists := getAttr("src", node); exists {
-				if parsedURL, err := p.base.Parse(urlValue); err == nil {
-					propertyValue = parsedURL.String()
+			switch node.DataAtom {
+			case atom.Meta:
+				if val, exists := getAttr("content", node); exists {
+					propertyValue = val
 				}
-			}
-		case atom.A, atom.Area, atom.Link:
-			if urlValue, exists := getAttr("href", node); exists {
-				if parsedURL, err := p.base.Parse(urlValue); err == nil {
-					propertyValue = parsedURL.String()
+			case atom.Audio, atom.Embed, atom.Iframe, atom.Img, atom.Source, atom.Track, atom.Video:
+				if urlValue, exists := getAttr("src", node); exists {
+					if parsedURL, err := p.base.Parse(urlValue); err == nil {
+						propertyValue = parsedURL.String()
+					}
 				}
-			}
-		case atom.Object:
-			if urlValue, exists := getAttr("data", node); exists {
-				propertyValue = urlValue
-			}
-		case atom.Data, atom.Meter:
-			if urlValue, exists := getAttr("value", node); exists {
-				propertyValue = urlValue
-			}
-		case atom.Time:
-			if urlValue, exists := getAttr("datetime", node); exists {
-				propertyValue = urlValue
-			}
-
-		default:
-			var text bytes.Buffer
-			walk(node, func(n *html.Node) {
-				if n.Type == html.TextNode {
-					text.WriteString(n.Data)
+			case atom.A, atom.Area, atom.Link:
+				if urlValue, exists := getAttr("href", node); exists {
+					if parsedURL, err := p.base.Parse(urlValue); err == nil {
+						propertyValue = parsedURL.String()
+					}
+				}
+			case atom.Object:
+				if urlValue, exists := getAttr("data", node); exists {
+					propertyValue = urlValue
+				}
+			case atom.Data, atom.Meter:
+				if urlValue, exists := getAttr("value", node); exists {
+					propertyValue = urlValue
+				}
+			case atom.Time:
+				if urlValue, exists := getAttr("datetime", node); exists {
+					propertyValue = urlValue
 				}
 
-			})
-			propertyValue = text.String()
-		}
+			default:
+				var text bytes.Buffer
+				walk(node, func(n *html.Node) {
+					if n.Type == html.TextNode {
+						text.WriteString(n.Data)
+					}
 
-		if len(propertyValue) > 0 {
-			for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
-				propertyName = strings.TrimSpace(propertyName)
-				if propertyName != "" {
-					item.AddString(propertyName, propertyValue)
+				})
+				propertyValue = text.String()
+			}
+
+			if len(propertyValue) > 0 {
+				for _, propertyName := range strings.Split(strings.TrimSpace(itemprop), " ") {
+					propertyName = strings.TrimSpace(propertyName)
+					if propertyName != "" {
+						item.AddString(propertyName, propertyValue)
+					}
 				}
 			}
 		}
-
 	}
 
 	for child := node.FirstChild; child != nil; {
@@ -249,6 +230,7 @@ func (p *Parser) readItem(item *Item, node *html.Node) {
 		child = child.NextSibling
 	}
 
+	return item
 }
 
 func getAttr(name string, node *html.Node) (string, bool) {
