@@ -583,8 +583,9 @@ func TestSkipSelfReferencingItemref(t *testing.T) {
 	actual := ParseData(html, t)
 
 	child := NewItem()
-	child.AddString("title", "Foo")
+	child.AddType("http://data-vocabulary.org/Breadcrumb")
 	child.AddString("url", "http://example.com/foo/bar")
+	child.AddString("title", "Foo")
 
 	item := NewItem()
 	item.AddType("http://schema.org/WebPage")
@@ -595,5 +596,71 @@ func TestSkipSelfReferencingItemref(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Expecting %v but got %v", expected, actual)
+	}
+}
+
+// This test validates that properties within an itemscope'd element remain
+// with that contained item even if it is not, via itemprop, made an explicit child
+// of its container item.
+func TestPropertiesInContainedItem(t *testing.T) {
+	html := `
+		<body itemscope itemtype="http://schema.org/WebPage">
+			<meta itemprop="foo" content="foo value">
+
+			<div itemscope itemtype="http://schema.org/Person">
+				<meta itemprop="bar" content="bar value">
+			</div>
+			<div itemscope itemtype="http://schema.org/Person" itemprop="author">
+				<meta itemprop="baz" content="baz value">
+			</div>
+		</body>`
+
+	actual := ParseData(html, t)
+
+	// There should be two top-level items: WebPage and the Person that isn't an author.
+	if len(actual.Items) != 2 {
+		t.Fatalf("expected 2 top-level items, got %d", len(actual.Items))
+	}
+
+	outer := actual.Items[0]
+	inner := actual.Items[1]
+
+	// The first item should be a WebPage.  The properties in its contained items should
+	// not be properties of the containing item.
+	if len(outer.Types) != 1 || outer.Types[0] != "http://schema.org/WebPage" {
+		t.Fatalf("expected outer to be http://schema.org/WebPage, got %v", outer.Types)
+	}
+	if _, present := outer.Properties["bar"]; present {
+		t.Errorf("outer should not have a 'bar' property, got %v", outer.Properties["bar"])
+	}
+	if _, present := outer.Properties["baz"]; present {
+		t.Errorf("outer should not have a 'baz' property, got %v", outer.Properties["baz"])
+	}
+
+	// The second item should be the non-author child element of outer.  Since there is
+	// no itemprop attribute, it's not a child *item* of outer but it should stand as its
+	// own item.
+	if len(inner.Types) != 1 || inner.Types[0] != "http://schema.org/Person" {
+		t.Fatalf("expected inner to be http://schema.org/Person, got %v", inner.Types)
+	}
+	if _, present := inner.Properties["bar"]; !present {
+		t.Errorf("inner should have a 'bar' property")
+	}
+
+	// The third item is the author, which should be a child item (via the 'author' itemprop)
+	// of outer.  It, too, should have its own discrete type and property.
+	if list := outer.Properties["author"]; len(list) == 1 {
+		if author, ok := list[0].(*Item); ok {
+			if len(author.Types) != 1 || author.Types[0] != "http://schema.org/Person" {
+				t.Fatalf("expected author to be http://schema.org/Person, got %v", author.Types)
+			}
+			if _, present := author.Properties["baz"]; !present {
+				t.Errorf("inner should have a 'baz' property")
+			}
+		} else {
+			t.Errorf("expected author item, got %v", list)
+		}
+	} else {
+		t.Errorf("expected outer to have a child of author, got %v", outer.Properties["author"])
 	}
 }
