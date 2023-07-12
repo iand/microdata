@@ -2,4 +2,4 @@ module github.com/iand/microdata
 
 go 1.16
 
-require golang.org/x/net v0.11.0
+require golang.org/x/net v0.12.0
