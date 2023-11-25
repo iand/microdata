@@ -5,6 +5,9 @@ on:
     workflows: ["Run tests"]
     types:
       - completed
+    branches:
+      - main
+      - master
 
 jobs:
   version:
